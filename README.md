@@ -21,7 +21,7 @@ python -m venv .venv
 ```
 PyTorch is only needed to retrain the models, not to run the app.
 
-Frontend (Node 20+), in a second terminal:
+Frontend (Node 22.12+), in a second terminal:
 ```
 cd frontend
 npm install
@@ -80,6 +80,20 @@ data/ (synthetic payments) --ml/train_fraud.py--> models/fraud_models.joblib + d
 - **Uploads** (`POST /api/merchant/datasets`) are validated and held in memory for 2 hours. They are scored by the older risk model, not the four fraud models.
 - **Review marks** (Fraud / Fine on Risk alerts) are written to `backend/data/review_labels/` (not committed).
 
+## Settings
+
+All optional. The backend reads environment variables; the frontend reads `frontend/.env` (see `frontend/.env.example`).
+
+| Variable | Where | Default | What it does |
+|---|---|---|---|
+| `VITE_API_BASE` | frontend build | `/api` | Address of the backend API, e.g. `https://<render address>/api` |
+| `API_TARGET` | frontend dev server | `http://127.0.0.1:8010` | Where `npm run dev` forwards `/api` |
+| `CORS_ORIGINS` | backend | local dev addresses (ports 5173, 4173) | Comma-separated sites allowed to call the API |
+| `CORS_ORIGIN_REGEX` | backend | none | Pattern of allowed sites (`render.yaml` allows `*.vercel.app`) |
+| `MAX_UPLOADS` | backend | `10` | Uploaded datasets held in memory at once (about 30 MB each) |
+| `DISABLE_RATE_LIMIT` | backend | off | Set to `1` to turn off per-visitor limits (tests use this) |
+| `MERCHANT_WARM` | backend | on | Set to `0` to skip preparing the sample at start-up |
+
 ## Deploy
 
 The frontend is static and goes on **Vercel**. The backend (FastAPI + the trained models) does not fit Vercel functions, so it runs as a Docker service on **Render** (the free plan is enough). The two are joined by one environment variable.
@@ -104,7 +118,7 @@ python ml/make_merchant_sample.py     # the Dashboard sample -> data/merchant_sa
 
 ## Data notes
 
-- `data/spam.csv` is the public UCI SMS Spam Collection. The optional Indian scam-message set (Shade63) has no licence, so it is **not** included; without it the Scam messages page trains on the English set only. To use it, place `sentinel_dataset_multiclass.csv` in `backend/data/shade63/` (git-ignored).
+- `data/spam.csv` is the public UCI SMS Spam Collection (licensed CC BY 4.0 by its authors). The optional Indian scam-message set (Shade63) has no licence, so it is **not** included; without it the Scam messages page trains on the English set only. To use it, place `sentinel_dataset_multiclass.csv` in `backend/data/shade63/` (git-ignored).
 - The real IEEE-CIS and ULB credit-card datasets are not included.
 
 ## Limits
@@ -113,3 +127,9 @@ python ml/make_merchant_sample.py     # the Dashboard sample -> data/merchant_sa
 - Fraud check judges card-style signals and has not been tested on real UPI payments.
 - Scam message data is template-heavy, so real messages may score lower.
 - Rate limiting is in memory only; dataset isolation relies on unguessable ids.
+
+## Authors and licence
+
+Built by **Mohammed Amaan Siddique** and **Abdul Hakim Shaikh**, Vidyalankar Institute of Technology, Mumbai.
+
+The code is released under the [MIT licence](LICENSE). The datasets keep their own terms (see Data notes).

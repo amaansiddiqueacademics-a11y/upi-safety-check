@@ -6,6 +6,7 @@ CLAUDE.md
 graphify-out/
 .env
 .env.*
+!.env.example
 *.local
 .vscode/
 .idea/
@@ -32,5 +33,5 @@ backend/data/review_labels/
 backend/data/raw/
 backend/data/shade63/
 
-# The synthetic data (backend/data/*.csv), the sample (backend/data/merchant_sample/) and the trained models
+# The synthetic data (backend/data/*.csv.gz, spam.csv), the sample (backend/data/merchant_sample/) and the trained models
 # (backend/models/*.joblib) are deliberately NOT ignored: the app needs them to run.
