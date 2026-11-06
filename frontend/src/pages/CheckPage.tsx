@@ -83,16 +83,15 @@ export default function CheckPage() {
         remember({ utr: id, amount: want, kind: k })
         return
       }
-      const page = await bizApi.transactions(ds, { q: id, page_size: 5 })
-      const hit = page.rows.find((r) => r.tid === id)
-      if (!hit) {
+      // exact lookup: a text search could miss the payment when many references contain the typed digits
+      const detail = await bizApi.findTransaction(ds, id)
+      if (!detail) {
         setRes({ utr: id, amount: want, r: { kind: 'missing' } })
         remember({ utr: id, amount: want, kind: 'missing' })
         return
       }
-      const detail = await bizApi.transaction(ds, hit.tid)
-      const have = hit.amount_paise / 100
-      const kind: Kind = hit.status !== 'success' ? 'status' : Math.abs(have - want) < 0.5 ? 'match' : 'differs'
+      const have = detail.amount_paise / 100
+      const kind: Kind = detail.status !== 'success' ? 'status' : Math.abs(have - want) < 0.5 ? 'match' : 'differs'
       setRes({ utr: id, amount: want, r: { kind, amount: have, detail } })
       remember({ utr: id, amount: want, kind })
     } catch (x) {

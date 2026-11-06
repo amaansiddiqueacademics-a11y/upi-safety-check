@@ -194,6 +194,15 @@ def txn_frame(ds: MerchantDataset) -> pd.DataFrame:
     return f
 
 
+def _row(r: Any) -> dict[str, Any]:
+    """One payment as the Payments table shows it (r is a row from txn_frame().itertuples())."""
+    return {
+        "tid": r.tid, "txn_ref": r.txn_ref, "ts": r.ts.isoformat(), "amount_paise": int(r.amount_paise), "status": r.status, "outlet": r.outlet, "order_id": r.order_id,
+        "payer": mask_ref(r.payer_ref), "refund_paise": int(r.refund_paise), "discrepancies": int(r.discrepancies), "is_duplicate_row": bool(r.is_dup_row),
+        "risk_level": r.risk_level if isinstance(r.risk_level, str) else None, "risk_score": None if pd.isna(r.risk_score) else round(float(r.risk_score), 1), "risk_signal": r.risk_signal,
+    }
+
+
 def query_transactions(ds: MerchantDataset, *, date_from: str | None, date_to: str | None, status: list[str], outlet: str | None, risk: str | None, discrepancy: bool | None,
                        q: str | None, sort: str, desc: bool, page: int, page_size: int, tab: str | None = None) -> dict[str, Any]:
     f = txn_frame(ds)
@@ -229,11 +238,7 @@ def query_transactions(ds: MerchantDataset, *, date_from: str | None, date_to: s
     f = f.sort_values([key, "tid"], ascending=[not desc, True], kind="stable", na_position="last")
     total = len(f)
     pg = f.iloc[(page - 1) * page_size: page * page_size]
-    rows = [{
-        "tid": r.tid, "txn_ref": r.txn_ref, "ts": r.ts.isoformat(), "amount_paise": int(r.amount_paise), "status": r.status, "outlet": r.outlet, "order_id": r.order_id,
-        "payer": mask_ref(r.payer_ref), "refund_paise": int(r.refund_paise), "discrepancies": int(r.discrepancies), "is_duplicate_row": bool(r.is_dup_row),
-        "risk_level": r.risk_level if isinstance(r.risk_level, str) else None, "risk_score": None if pd.isna(r.risk_score) else round(float(r.risk_score), 1), "risk_signal": r.risk_signal,
-    } for r in pg.itertuples()]
+    rows = [_row(r) for r in pg.itertuples()]
     return {"total": total, "page": page, "page_size": page_size, "rows": rows, "sum_amount_paise": int(f["amount_paise"].sum()), "sum_confirmed_paise": int(f.loc[f["status"] == "success", "amount_paise"].sum())}
 
 
@@ -259,8 +264,8 @@ def transaction_detail(ds: MerchantDataset, tid: str) -> dict[str, Any] | None:
     if m.empty:
         return None
     r = m.iloc[0]
-    row = query_transactions(ds, date_from=None, date_to=None, status=[], outlet=None, risk=None, discrepancy=None, q=tid, sort="ts", desc=False, page=1, page_size=5)["rows"]
-    base = next(x for x in row if x["tid"] == tid)
+    f = txn_frame(ds)
+    base = _row(next(f[f["tid"] == tid].itertuples()))  # exact id: a text search could miss it when many references contain it
     order = None
     siblings: list[dict[str, Any]] = []
     if r["order_id"] and ds.has_orders and (ds.orders["order_id"] == r["order_id"]).any():

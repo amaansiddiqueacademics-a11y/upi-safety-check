@@ -98,8 +98,9 @@ def reconcile(ds: MerchantDataset) -> list[dict[str, Any]]:
     if ds.has_orders:
         orders = ds.orders.set_index("order_id")
         linked = pay[pay["order_id"].notna()]
-        succ_by = {k: g for k, g in linked[linked["status"] == "success"].groupby("order_id")}
-        fail_by = {k: g for k, g in linked[linked["status"] == "failed"].groupby("order_id")}
+        # Row positions per order id, not one small DataFrame per order: thousands of tiny frames cost hundreds of MB.
+        succ_rows, fail_rows = linked[linked["status"] == "success"], linked[linked["status"] == "failed"]
+        succ_at, fail_at = succ_rows.groupby("order_id").indices, fail_rows.groupby("order_id").indices
         any_by = set(linked["order_id"])
         matched_pay: set[str] = set()
         unlinked_orders: list[str] = []
@@ -107,7 +108,8 @@ def reconcile(ds: MerchantDataset) -> list[dict[str, Any]]:
             if oid not in any_by:
                 unlinked_orders.append(oid)
                 continue
-            succ, fail = succ_by.get(oid, linked.iloc[0:0]), fail_by.get(oid, linked.iloc[0:0])
+            succ = succ_rows.iloc[succ_at[oid]] if oid in succ_at else linked.iloc[0:0]
+            fail = fail_rows.iloc[fail_at[oid]] if oid in fail_at else linked.iloc[0:0]
             if len(succ) >= 2:
                 total = int(succ["amount_paise"].sum())
                 add("duplicate_payment", oid, tids=succ["tid"], orders=[oid], outlet=o["outlet"], ts=succ["ts"].iloc[0], expected=o["amount_paise"], recorded=total, stake=max(0, total - int(o["amount_paise"])),
@@ -132,11 +134,12 @@ def reconcile(ds: MerchantDataset) -> list[dict[str, Any]]:
 
         # orders with no payment carrying their id: look for a lone payment of the same amount at the same outlet nearby in time
         free = pay[(pay["status"] == "success") & ~pay["tid"].isin(matched_pay) & (pay["order_id"].isna() | ~pay["order_id"].isin(orders.index))]
-        free_idx = {k: g for k, g in free.groupby(["outlet", "amount_paise"])}
+        free_at = free.groupby(["outlet", "amount_paise"]).indices
         used: set[str] = set()
         for oid in unlinked_orders:
             o = orders.loc[oid]
-            cands = free_idx.get((o["outlet"], o["amount_paise"]))
+            pos = free_at.get((o["outlet"], o["amount_paise"]))
+            cands = None if pos is None else free.iloc[pos]
             cands = cands[((cands["ts"] - o["ts"]).abs() <= MATCH_WINDOW) & ~cands["tid"].isin(used)] if cands is not None else None
             if cands is not None and len(cands) == 1:
                 used.add(cands["tid"].iloc[0])  # one clear candidate: accepted as a match by amount and time
@@ -172,14 +175,14 @@ def reconcile(ds: MerchantDataset) -> list[dict[str, Any]]:
 
     # 4. pending for more than a day
     for p in pay[(pay["status"] == "pending") & (pay["ts"] < anchor - PENDING_AFTER)].itertuples():
-        add("pending_payment", p.tid, tids=[p.tid], orders=[p.order_id] if p.order_id else [], outlet=p.outlet, ts=p.ts, expected=p.amount_paise, recorded=0, stake=p.amount_paise,
+        add("pending_payment", p.tid, tids=[p.tid], orders=[p.order_id] if isinstance(p.order_id, str) and p.order_id else [], outlet=p.outlet, ts=p.ts, expected=p.amount_paise, recorded=0, stake=p.amount_paise,
             evidence=[f"{p.tid}: {inr(p.amount_paise)}, pending since {when(p.ts)}"],
             explanation="A payment normally ends as success or failed soon after it starts. One still pending after a day needs a status check.",
             next_step="Ask your payment provider for the final status of this reference.")
 
     # 5. reversed payments
     for p in pay[pay["status"] == "reversed"].itertuples():
-        add("reversal_review", p.tid, tids=[p.tid], orders=[p.order_id] if p.order_id else [], outlet=p.outlet, ts=p.ts, expected=p.amount_paise, recorded=0, stake=p.amount_paise,
+        add("reversal_review", p.tid, tids=[p.tid], orders=[p.order_id] if isinstance(p.order_id, str) and p.order_id else [], outlet=p.outlet, ts=p.ts, expected=p.amount_paise, recorded=0, stake=p.amount_paise,
             evidence=[f"{p.tid}: {inr(p.amount_paise)} reversed ({when(p.ts)})"], explanation="A reversal returns the money to the payer. It is not a finding on its own.",
             next_step="Confirm the reversal was intended and the order is handled (re-billed or cancelled).")
 

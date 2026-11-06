@@ -16,8 +16,8 @@ Simulated people:
                      repeat_offender     an account caught before (chargeback > 30 days ago) commits fraud again
                      friendly_fraud      the real customer disputes a normal-looking payment (almost impossible to catch)
 
-Writes data/train_transaction.csv, train_identity.csv (same columns the real loader reads) and
-_patterns.csv (TransactionID -> pattern; for EDA only, never a model input).
+Writes data/train_transaction.csv.gz, train_identity.csv.gz (same columns the real loader reads) and
+_patterns.csv.gz (TransactionID -> pattern; for EDA only, never a model input).
 """
 
 from __future__ import annotations
@@ -302,9 +302,9 @@ def main() -> None:
     ident = identity(df, sim.devices, rng)
     trans = pd.concat([df.drop(columns=["_dev", "_pattern"]), bank_side(df, rng)], axis=1)
     OUT.mkdir(parents=True, exist_ok=True)
-    trans.to_csv(OUT / "train_transaction.csv", index=False)
-    ident.to_csv(OUT / "train_identity.csv", index=False)
-    df[["TransactionID", "_pattern"]].rename(columns={"_pattern": "pattern"}).to_csv(OUT / "_patterns.csv", index=False)
+    trans.to_csv(OUT / "train_transaction.csv.gz", index=False)  # gzip: 98 MB -> 26 MB, under GitHub's file limits
+    ident.to_csv(OUT / "train_identity.csv.gz", index=False)
+    df[["TransactionID", "_pattern"]].rename(columns={"_pattern": "pattern"}).to_csv(OUT / "_patterns.csv.gz", index=False)
     for f in ("_features.pkl", "_walk_forward.json"):  # features changed -> old caches are stale
         (OUT / f).unlink(missing_ok=True)
     print(f"wrote {len(trans):,} rows ({trans.isFraud.mean():.2%} fraud), {len(ident):,} identity rows to {OUT} in {time.time() - t0:.0f}s")

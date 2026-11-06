@@ -16,6 +16,7 @@ import pandas as pd
 
 STATUSES = ("success", "failed", "pending", "reversed")
 MAX_ROWS = 100_000
+MAX_AMOUNT_PAISE = 10_00_00_000 * 100  # Rs 10 crore: above this a row is a typo, and huge numbers would overflow the sums
 
 # Optional payer-side signals. A payment provider may supply them; a merchant's own books usually do not.
 SIGNAL_NUM = ["sig_new_device", "sig_ip_mismatch", "sig_failed_attempts", "sig_loyalty", "sig_user_avg_value", "sig_recurring"]
@@ -32,7 +33,7 @@ _STATUS_WORDS = {
 
 
 def to_paise(value: Any) -> int | None:
-    """Rupees (any common text form) -> integer paise, rounded half-up. None if not a positive amount."""
+    """Rupees (any common text form) -> integer paise, rounded half-up. None if not a positive amount (see too_large for the cap)."""
     if value is None or (isinstance(value, float) and np.isnan(value)):
         return None
     s = re.sub(r"[₹,\s]|Rs\.?|INR", "", str(value), flags=re.I)
@@ -43,6 +44,11 @@ def to_paise(value: Any) -> int | None:
     if not d.is_finite() or d <= 0:
         return None
     return int((d * 100).quantize(Decimal(1), rounding=ROUND_HALF_UP))
+
+
+def too_large(paise: pd.Series) -> pd.Series:
+    """Amounts above Rs 10 crore: almost certainly a typo (an extra zero, a pasted reference) and unsafe to add up."""
+    return paise.map(lambda p: p is not None and not pd.isna(p) and p > MAX_AMOUNT_PAISE).astype(bool)
 
 
 def parse_dt(values: pd.Series) -> pd.Series:
@@ -193,7 +199,7 @@ def parse_transactions(raw: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     df["txn_ref"] = df["txn_ref"].astype(str).str.strip()
     df, notes = _drop_bad(
         df, "transaction",
-        [("unreadable date/time", df["ts"].isna()), ("amount missing, zero, negative or unreadable", df["amount_paise"].isna()),
+        [("unreadable date/time", df["ts"].isna()), ("amount missing, zero, negative or unreadable", df["amount_paise"].isna()), ("amount over ₹10 crore", too_large(df["amount_paise"])),
          ("status is not success/failed/pending/reversed (or a common synonym)", df["status"].isna()), ("empty transaction reference", df["txn_ref"].isin(["", "nan", "None"]))],
     )
     if df.empty:
@@ -219,7 +225,7 @@ def parse_orders(raw: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     df["ts"] = parse_dt(df["ts"])
     df["amount_paise"] = df["amount"].map(to_paise)
     df["order_id"] = df["order_id"].astype(str).str.strip()
-    df, notes = _drop_bad(df, "order", [("unreadable date/time", df["ts"].isna()), ("amount missing or not positive", df["amount_paise"].isna()), ("empty order id", df["order_id"].isin(["", "nan", "None"]))])
+    df, notes = _drop_bad(df, "order", [("unreadable date/time", df["ts"].isna()), ("amount missing or not positive", df["amount_paise"].isna()), ("amount over ₹10 crore", too_large(df["amount_paise"])), ("empty order id", df["order_id"].isin(["", "nan", "None"]))])
     df["amount_paise"] = df["amount_paise"].astype("int64")
     df["outlet"] = df["outlet"].fillna("Main").astype(str) if "outlet" in df else "Main"
     dup = df["order_id"].duplicated(keep="first")
@@ -235,7 +241,7 @@ def parse_refunds(raw: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     df["txn_ref"] = df["txn_ref"].astype(str).str.strip()
     if "refund_id" not in df:
         df["refund_id"] = [f"RF{i + 1:05d}" for i in range(len(df))]
-    df, notes = _drop_bad(df, "refund", [("unreadable date/time", df["ts"].isna()), ("amount missing or not positive", df["amount_paise"].isna())])
+    df, notes = _drop_bad(df, "refund", [("unreadable date/time", df["ts"].isna()), ("amount missing or not positive", df["amount_paise"].isna()), ("amount over ₹10 crore", too_large(df["amount_paise"]))])
     df["amount_paise"] = df["amount_paise"].astype("int64")
     return df[["refund_id", "txn_ref", "ts", "amount_paise"]].reset_index(drop=True), notes
 
@@ -244,7 +250,7 @@ def parse_settlements(raw: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     df = _canon(raw, "settlements")
     df["date"] = parse_dt(df["date"]).dt.normalize()
     df["amount_paise"] = df["amount"].map(to_paise)
-    df, notes = _drop_bad(df, "settlement", [("unreadable date", df["date"].isna()), ("amount missing or not positive", df["amount_paise"].isna())])
+    df, notes = _drop_bad(df, "settlement", [("unreadable date", df["date"].isna()), ("amount missing or not positive", df["amount_paise"].isna()), ("amount over ₹10 crore", too_large(df["amount_paise"]))])
     df["amount_paise"] = df["amount_paise"].astype("int64")
     # several settlement lines on one day are summed
     return df.groupby("date", as_index=False)["amount_paise"].sum(), notes

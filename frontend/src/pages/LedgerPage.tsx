@@ -9,8 +9,12 @@ import { Pager } from '../components/bizui'
 import { EmptyState, PageHeader, StatusChip } from '../components/shell'
 
 const PAGE = 12
-const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-const today = () => new Date().toISOString().slice(0, 10)
+// Dates are calendar days (YYYY-MM-DD): read and write them in local time, never via UTC, or they can move by a day.
+const fmtDate = (iso: string) => new Date(iso.slice(0, 10) + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+const today = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 /** Small manual form: bank reference, amount, date, customer. */
 function AddForm({ initial, onSave, onClose }: { initial: Partial<AddedPayment>; onSave: (p: AddedPayment) => void; onClose: () => void }) {

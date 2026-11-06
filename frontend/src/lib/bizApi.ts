@@ -79,7 +79,7 @@ async function get<T>(path: string): Promise<T> {
     } catch {
       /* not JSON */
     }
-    throw new Error(msg)
+    throw Object.assign(new Error(msg), { status: res.status })
   }
   return res.json() as Promise<T>
 }
@@ -166,6 +166,11 @@ export const bizApi = {
   paymentsCsv: (ds: string, p: Record<string, string | number | undefined>) => `${BASE}/merchant/${ds}/transactions.csv?${qs(p)}`,
   transactions: (ds: string, p: Record<string, string | number | boolean | undefined>) => get<TxnPage>(`/merchant/${ds}/transactions?${qs(p)}`),
   transaction: (ds: string, tid: string) => get<TxnDetail>(`/merchant/${ds}/transactions/${encodeURIComponent(tid)}`),
+  /** The payment with exactly this reference, or null when there is none. */
+  findTransaction: (ds: string, tid: string) => get<TxnDetail>(`/merchant/${ds}/transactions/${encodeURIComponent(tid)}`).catch((e: Error & { status?: number }) => {
+    if (e.status === 404) return null
+    throw e
+  }),
   recon: (ds: string, p: Record<string, string | number | undefined>) => get<ReconPage>(`/merchant/${ds}/reconciliation?${qs(p)}`),
   async upload(files: { transactions: File; orders?: File | null; refunds?: File | null; settlements?: File | null }): Promise<BizMeta> {
     const fd = new FormData()

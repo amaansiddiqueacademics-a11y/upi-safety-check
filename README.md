@@ -29,7 +29,7 @@ npm run dev                                              # http://localhost:5173
 ```
 Open http://localhost:5173. The sample business comes pre-analysed in `backend/data/merchant_sample/_analyzed.pkl`, so the server starts in seconds. If you change the sample or the analysis code, the cache is rebuilt automatically on the next start (about half a minute).
 
-Checks: `cd backend && python -m pytest -q` (38 tests) · `cd frontend && npm run build` (type-checks, then builds)
+Checks: `cd backend && python -m pytest -q` (38 tests) · `cd frontend && npm test && npm run build` (17 tests; the build type-checks first)
 
 ## The pages
 
@@ -54,7 +54,7 @@ Every payment can be opened in Fraud check pre-filled from the merchant's own pa
 ```
 backend/
   app/                 FastAPI app (main.py) and the merchant package: analytics, dashboard, reconcile, risk, explore, fraud and spam models
-  data/                the synthetic data (train_transaction.csv, train_identity.csv, _patterns.csv), spam.csv, and merchant_sample/ (the Dashboard sample)
+  data/                the synthetic data (train_transaction.csv.gz, train_identity.csv.gz, _patterns.csv.gz; gzip-compressed, 31 MB), spam.csv, and merchant_sample/ (the Dashboard sample)
   models/              the trained fraud models (fraud_models.joblib), the older upload risk model, the model registry
   ml/                  scripts that regenerate the data, the models and the sample
   tests/               pytest suite
@@ -113,4 +113,3 @@ python ml/make_merchant_sample.py     # the Dashboard sample -> data/merchant_sa
 - Fraud check judges card-style signals and has not been tested on real UPI payments.
 - Scam message data is template-heavy, so real messages may score lower.
 - Rate limiting is in memory only; dataset isolation relies on unguessable ids.
-- `backend/data/train_transaction.csv` is 97 MB, close to GitHub's 100 MB per-file limit; it is only used for retraining.

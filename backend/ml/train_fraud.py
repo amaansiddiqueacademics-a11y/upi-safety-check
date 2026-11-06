@@ -517,7 +517,7 @@ def run_synth() -> dict[str, Any]:
         df = ff.load_ieee(SYNTH)
         F = ff.build(df)
         pd.to_pickle((df, F), cache)
-    pattern = pd.read_csv(SYNTH / "_patterns.csv").set_index("TransactionID").loc[df["TransactionID"], "pattern"].to_numpy()
+    pattern = pd.read_csv(ff.csv_file(SYNTH, "_patterns")).set_index("TransactionID").loc[df["TransactionID"], "pattern"].to_numpy()
     y = df["isFraud"].to_numpy(int)
     amt = df["TransactionAmt"].to_numpy(float)
     period = np.minimum(df["TransactionDT"].to_numpy() // (30 * ff.DAY), 5).astype(int)

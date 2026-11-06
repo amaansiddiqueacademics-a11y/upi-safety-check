@@ -72,12 +72,18 @@ def _family(s: pd.Series, rules: list[tuple[str, str]]) -> pd.Series:
     return out
 
 
+def csv_file(folder: Path, name: str) -> Path:
+    """`folder/name.csv`, or its gzip copy `name.csv.gz` (the synthetic data ships compressed). pandas reads either."""
+    plain = folder / f"{name}.csv"
+    return plain if plain.exists() else folder / f"{name}.csv.gz"
+
+
 def load_ieee(raw: Path, v_cols: list[str] | None = None) -> pd.DataFrame:
     """Read only the columns we use from the two IEEE-CIS training files (V columns only if asked)."""
     keep = {"TransactionID", "isFraud", "TransactionDT", "TransactionAmt", "ProductCD", "card1", "card2", "card4", "card6", "addr1", "dist1",
             "P_emaildomain", "D1", *RESEARCH_EXTRA_NUM, *(v_cols or [])}
-    t = pd.read_csv(raw / "train_transaction.csv", usecols=lambda c: c in keep)
-    ident = pd.read_csv(raw / "train_identity.csv", usecols=["TransactionID", "DeviceType", "DeviceInfo", "id_01", "id_02", "id_05", "id_06", "id_13",
+    t = pd.read_csv(csv_file(raw, "train_transaction"), usecols=lambda c: c in keep)
+    ident = pd.read_csv(csv_file(raw, "train_identity"), usecols=["TransactionID", "DeviceType", "DeviceInfo", "id_01", "id_02", "id_05", "id_06", "id_13",
                                                                "id_17", "id_19", "id_20", "id_30", "id_31", "id_33"])
     df = t.merge(ident, on="TransactionID", how="left", suffixes=("", "_i"))
     for c in [c for c in df.columns if c.endswith("_i")]:

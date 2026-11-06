@@ -119,16 +119,24 @@ def _train() -> None:
             "recall": float(recall_score(yte, pred)), "f1": float(f1_score(yte, pred)), "roc_auc": float(roc_auc_score(yte, p)), "confusion": {"tp": int(tp), "fp": int(fp), "fn": int(fn), "tn": int(tn)},
         })
     S.best = max(S.results, key=lambda r: r["f1"])["id"]
+    # Describe the data that was really used: the Indian scam set is optional and not shipped (it has no licence).
+    has_india = bool((df["source"] == "india").any())
+    source = ("Indian bank, UPI and government scam texts + English SMS spam (near-duplicates removed)" if has_india
+              else "English SMS spam (UCI SMS Spam Collection, near-duplicates removed)")
+    second_caveat = ("Much of the Indian scam data is machine-generated from templates, so real-world accuracy will be lower than these scores. "
+                     "Use it as a second opinion next to your own judgement." if has_india else
+                     "The models learned from English SMS spam, not Indian UPI scams, so they may miss scams that use Hindi, Hinglish or "
+                     "UPI-specific wording. Use them as a second opinion next to your own judgement.")
     for r in S.results:
         r["best"] = r["id"] == S.best
     S.info = {
         "messages": int(len(df)), "spam": int(y.sum()), "spam_rate": float(y.mean()), "train": int(len(ytr)), "test": int(len(yte)), "test_spam": int(yte.sum()),
-        "source": "Indian bank, UPI and government scam texts + English SMS spam (near-duplicates removed)", "vocab": int(len(S.vec.vocabulary_)), "threshold": 0.5,
+        "source": source, "vocab": int(len(S.vec.vocabulary_)), "threshold": 0.5,
         "split": "75% to learn, 25% to test; copies of the same message template never sit on both sides",
         "text_prep": "Words and word pairs, common English words removed, rare words weighted higher (TF-IDF)",
         "caveats": [
             "Tested on 25% of messages the models never saw. Near-identical messages (same text, different numbers) were merged first so nothing is memorised.",
-            "Much of the Indian scam data is machine-generated from templates, so real-world accuracy will be lower than these scores. Use it as a second opinion next to your own judgement.",
+            second_caveat,
         ],
     }
     S.ready = True
