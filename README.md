@@ -1,8 +1,11 @@
 # UPI Safety Check
 
-[![CI](https://github.com/amaansiddiqueacademics-a11y/upi-safety-check/actions/workflows/ci.yml/badge.svg)](https://github.com/amaansiddiqueacademics-a11y/upi-safety-check/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Live demo](https://img.shields.io/badge/live%20demo-online-2ea44f?logo=vercel&logoColor=white)](https://upi-safety-check-app.vercel.app/) [![CI](https://github.com/amaansiddiqueacademics-a11y/upi-safety-check/actions/workflows/ci.yml/badge.svg)](https://github.com/amaansiddiqueacademics-a11y/upi-safety-check/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)](backend/.python-version) [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)](backend/requirements.txt) [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.9-F7931E?logo=scikitlearn&logoColor=white)](backend/requirements.txt) [![XGBoost](https://img.shields.io/badge/XGBoost-3.4-1E88E5)](backend/requirements.txt) [![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](frontend/package.json) [![TypeScript](https://img.shields.io/badge/TypeScript-7-3178C6?logo=typescript&logoColor=white)](frontend/package.json) [![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](frontend/package.json) [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)](frontend/package.json) [![Docker](https://img.shields.io/badge/backend-Docker%20on%20Render-46E3B7?logo=render&logoColor=black)](render.yaml)
 
 A fraud and payment-safety dashboard for small UPI merchants. It answers three questions in plain words: **did the money arrive, where did money go missing, and which payments look like fraud.**
+
+**Try it:** https://upi-safety-check-app.vercel.app/ (no sign-up; it opens with a sample shop). The API sleeps after 15 minutes without visits, so the first load after a pause can take about a minute.
 
 Backend: FastAPI + scikit-learn / XGBoost / LightGBM (`backend/`). Frontend: React + Vite + Tailwind + Recharts PWA (`frontend/`). No login, English only.
 
