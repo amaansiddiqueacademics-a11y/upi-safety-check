@@ -1,0 +1,3 @@
+-r requirements.txt
+# Only for retraining the models (ml/train_fraud.py). The app itself runs the neural network as plain NumPy arrays.
+torch>=2.4

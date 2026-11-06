@@ -50,23 +50,39 @@ function Row({ it, done, onToggle }: { it: Item; done: boolean; onToggle: () => 
   )
 }
 
+/** One group of actions (Do now / This week / Done). */
+function List({ title, list, empty, isDone = false, onToggle }: { title: string; list: Item[]; empty: string; isDone?: boolean; onToggle: (id: string) => void }) {
+  return (
+    <section className="card" aria-labelledby={title}>
+      <h2 id={title} className="flex items-center justify-between border-b border-line p-4 text-lg font-semibold">{title}<span className="num text-sm font-normal text-muted">{list.length}</span></h2>
+      {list.length === 0 ? <p className="p-4 text-sm text-muted">{empty}</p> : <ul className="divide-y divide-line">{list.map((i) => <Row key={i.id} it={i} done={isDone} onToggle={() => onToggle(i.id)} />)}</ul>}
+    </section>
+  )
+}
+
+/** Items the merchant marked done for this dataset (kept in this browser). */
+function readDone(ds: string): Record<string, true> {
+  try {
+    return JSON.parse(localStorage.getItem(DONE_KEY(ds)) ?? '{}')
+  } catch {
+    return {}
+  }
+}
+
 /** Action center: what to do now, what can wait a week, and what is done. */
 export default function ActionsPage() {
   const { ds } = useBizCtx()
   const recon = useBiz(() => bizApi.recon(ds, { page_size: 1 }), `act-recon-${ds}`).data
   const risk = useBiz(() => bizApi.riskAlerts(ds, { page_size: 1 }), `act-risk-${ds}`).data
-  const [done, setDone] = useState<Record<string, true>>({})
-  useEffect(() => {
-    try {
-      setDone(JSON.parse(localStorage.getItem(DONE_KEY(ds)) ?? '{}'))
-    } catch {
-      setDone({})
-    }
-  }, [ds])
+  // read on the first render, so done items never flash as open; re-read when the dataset changes
+  const [done, setDone] = useState<Record<string, true>>(() => readDone(ds))
+  // oxlint-disable-next-line react/set-state-in-effect -- syncing from localStorage, an outside store
+  useEffect(() => setDone(readDone(ds)), [ds])
   const toggle = (id: string) =>
     setDone((d) => {
       const n = { ...d }
-      n[id] ? delete n[id] : (n[id] = true)
+      if (n[id]) delete n[id]
+      else n[id] = true
       try {
         localStorage.setItem(DONE_KEY(ds), JSON.stringify(n))
       } catch {
@@ -92,22 +108,15 @@ export default function ActionsPage() {
   const week = open.filter((i) => !i.urgent)
   const finished = items.filter((i) => done[i.id])
 
-  const List = ({ title, list, empty, isDone = false }: { title: string; list: Item[]; empty: string; isDone?: boolean }) => (
-    <section className="card" aria-labelledby={title}>
-      <h2 id={title} className="flex items-center justify-between border-b border-line p-4 text-lg font-semibold">{title}<span className="num text-sm font-normal text-muted">{list.length}</span></h2>
-      {list.length === 0 ? <p className="p-4 text-sm text-muted">{empty}</p> : <ul className="divide-y divide-line">{list.map((i) => <Row key={i.id} it={i} done={isDone} onToggle={() => toggle(i.id)} />)}</ul>}
-    </section>
-  )
-
   if (!recon || !risk) return <div className="space-y-4"><div className="skeleton h-16" /><div className="skeleton h-56" /><div className="skeleton h-56" /></div>
   if (items.length === 0) return <EmptyState icon={CircleCheck} title="Nothing to do." sub="Your records agree and no payment was flagged." />
 
   return (
     <div className="space-y-6">
       <PageHeader title="Action center" answer={now.length ? <><b className="num">{now.length}</b> things need you now, <b className="num">{week.length}</b> can wait this week.</> : 'Nothing urgent. A few things can wait this week.'} />
-      <List title="Do now" list={now} empty="Nothing urgent." />
-      <List title="This week" list={week} empty="Nothing waiting." />
-      <List title="Done" list={finished} empty="Items you mark done show here." isDone />
+      <List title="Do now" list={now} empty="Nothing urgent." onToggle={toggle} />
+      <List title="This week" list={week} empty="Nothing waiting." onToggle={toggle} />
+      <List title="Done" list={finished} empty="Items you mark done show here." isDone onToggle={toggle} />
       <Link to="/data" className="inline-flex items-center gap-1 text-sm font-medium text-brand hover:underline">Next: My data <ArrowRight size={14} /></Link>
     </div>
   )

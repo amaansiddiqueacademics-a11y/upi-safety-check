@@ -28,7 +28,7 @@ class TorchMLP(BaseEstimator, ClassifierMixin):
             n_in = h
         return nn.Sequential(*layers, nn.Linear(n_in, 1))
 
-    def fit(self, X: np.ndarray, y: np.ndarray) -> "TorchMLP":
+    def fit(self, X: np.ndarray, y: np.ndarray) -> TorchMLP:
         import torch
         from torch import nn
 
@@ -90,14 +90,14 @@ class NumpyMLP(BaseEstimator, ClassifierMixin):
         self.weights, self.biases = weights, biases
         self.classes_ = np.array([0, 1])
 
-    def fit(self, X: np.ndarray, y: np.ndarray) -> "NumpyMLP":  # noqa: ARG002
+    def fit(self, X: np.ndarray, y: np.ndarray) -> NumpyMLP:  # noqa: ARG002
         raise NotImplementedError("NumpyMLP only serves a network trained with TorchMLP; train with TorchMLP and convert.")
 
     def __sklearn_is_fitted__(self) -> bool:
         return self.weights is not None
 
     @classmethod
-    def from_torch(cls, m: "TorchMLP") -> "NumpyMLP":
+    def from_torch(cls, m: TorchMLP) -> NumpyMLP:
         import torch
 
         mods = list(m.net_.eval())
@@ -122,7 +122,7 @@ class NumpyMLP(BaseEstimator, ClassifierMixin):
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         h = np.asarray(X, dtype=np.float32)
-        for k, (W, b) in enumerate(zip(self.weights, self.biases)):
+        for k, (W, b) in enumerate(zip(self.weights, self.biases, strict=True)):
             h = h @ W + b
             if k < len(self.weights) - 1:
                 h = np.maximum(h, 0.0)

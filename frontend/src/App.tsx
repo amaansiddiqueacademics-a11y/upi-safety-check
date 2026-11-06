@@ -76,6 +76,8 @@ function Shell() {
 
   const [more, setMore] = useState(false)
   const { pathname } = useLocation()
+  // close the phone menu whenever the page changes
+  // oxlint-disable-next-line react/exhaustive-deps, react/set-state-in-effect -- intentional, see above
   useEffect(() => setMore(false), [pathname])
 
   const main: Item[] = [

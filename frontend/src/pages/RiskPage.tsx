@@ -70,7 +70,12 @@ export default function RiskPage() {
   const counts = useBiz(() => bizApi.riskAlerts(ds, { date_from: from, date_to: to, page_size: 1 }), `riskc-${ds}-${from}-${to}`).data
 
   const mark = (tid: string, l: 'fraud' | 'fine' | null) => {
-    setMarks((m) => { const n = { ...m }; l ? (n[tid] = l) : delete n[tid]; return n })
+    setMarks((m) => {
+      const n = { ...m }
+      if (l) n[tid] = l
+      else delete n[tid]
+      return n
+    })
     bizApi.setLabel(ds, tid, l).then(setMarks).catch(() => undefined)
   }
   const z = counts?.zones

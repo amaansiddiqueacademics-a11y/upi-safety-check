@@ -25,6 +25,11 @@ function RiskDot({ level }: { level: TxnRow['risk_level'] }) {
   return <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ background: RISK[level].color }} aria-hidden />{RISK[level].label}</span>
 }
 
+/** One label / value line in the drawer. */
+function Row({ k, v }: { k: string; v: React.ReactNode }) {
+  return <div className="flex justify-between gap-4 py-2 text-sm"><dt className="text-muted">{k}</dt><dd className="text-right font-medium">{v}</dd></div>
+}
+
 /** Side drawer: what this payment is, what it matched, and a plain reason if it looks risky. */
 function Drawer({ tid, onClose }: { tid: string; onClose: () => void }) {
   const { ds } = useBizCtx()
@@ -35,7 +40,6 @@ function Drawer({ tid, onClose }: { tid: string; onClose: () => void }) {
     return () => window.removeEventListener('keydown', h)
   }, [onClose])
   const reasons = d?.risk?.risk_model?.reasons ?? []
-  const Row = ({ k, v }: { k: string; v: React.ReactNode }) => <div className="flex justify-between gap-4 py-2 text-sm"><dt className="text-muted">{k}</dt><dd className="text-right font-medium">{v}</dd></div>
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Payment details">
       <button className="absolute inset-0 bg-black/30" aria-label="Close" onClick={onClose} />
@@ -93,7 +97,10 @@ export default function PaymentsPage() {
   const branch = params.get('branch') ?? ''
   const patch = (o: Record<string, string>) => {
     const n = new URLSearchParams(params)
-    for (const [k, v] of Object.entries(o)) v ? n.set(k, v) : n.delete(k)
+    for (const [k, v] of Object.entries(o)) {
+      if (v) n.set(k, v)
+      else n.delete(k)
+    }
     setParams(n, { replace: true })
     setPage(1)
   }

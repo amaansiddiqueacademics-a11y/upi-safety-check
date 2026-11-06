@@ -75,7 +75,7 @@ function UploadBox({ b, file, check, onPick }: { b: Box; file: File | null; chec
 }
 
 function AddData() {
-  const { ds, meta, useDataset, useSample } = useBizCtx()
+  const { ds, meta, openDataset, openSample } = useBizCtx()
   const [files, setFiles] = useState<Record<Kind, File | null>>({ transactions: null, orders: null, refunds: null, settlements: null })
   const [checks, setChecks] = useState<Partial<Record<Kind, { ok: boolean; missing: string[] }>>>({})
   const [busy, setBusy] = useState(false)
@@ -97,7 +97,7 @@ function AddData() {
     setBusy(true); setErr(''); setOk('')
     try {
       const m = await bizApi.upload({ transactions: files.transactions, orders: files.orders, refunds: files.refunds, settlements: files.settlements })
-      useDataset(m)
+      openDataset(m)
       setOk(`Done. ${m.counts.transactions.toLocaleString('en-IN')} payments loaded.`)
     } catch (e) {
       setErr((e as Error).message)
@@ -112,7 +112,7 @@ function AddData() {
       <div className="card flex flex-wrap items-center gap-3 p-4">
         <button className="btn btn-primary" disabled={!ready || busy} onClick={analyse}>{busy ? <Loader2 size={18} className="animate-spin" /> : null} Use my data</button>
         {!files.transactions && <span className="text-sm text-muted">Choose at least the Payments file.</span>}
-        {ds !== 'sample' && <button className="btn btn-ghost" onClick={useSample}><RotateCcw size={16} /> Back to sample data</button>}
+        {ds !== 'sample' && <button className="btn btn-ghost" onClick={openSample}><RotateCcw size={16} /> Back to sample data</button>}
         {ok && <span className="text-sm" role="status" style={{ color: 'var(--ok)' }}>{ok}</span>}
         {err && <span className="text-sm" role="alert" style={{ color: 'var(--bad)' }}>{err}</span>}
         <span className="ml-auto text-sm text-muted">Now showing: {meta ? `${meta.source === 'sample' ? 'Sample data' : 'Your data'} · ${meta.counts.transactions.toLocaleString('en-IN')} payments` : '…'}</span>

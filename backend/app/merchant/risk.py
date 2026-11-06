@@ -26,7 +26,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-from .model import MerchantDataset, SIGNAL_CAT
+from .model import SIGNAL_CAT, MerchantDataset
 from .reconcile import inr
 
 MODEL_PATH = Path(__file__).resolve().parents[2] / "models" / "txn_risk.joblib"
@@ -113,7 +113,7 @@ def score_supervised(model: dict[str, Any], tx: pd.DataFrame) -> tuple[np.ndarra
     # fold one-hot columns back to their source feature
     src = [n.split("__", 1)[1] for n in names]
     group = [next((c for c in SUP_CAT if s.startswith(c + "_")), s) for s in src]
-    cat_val = {i: s[len(g) + 1:] for i, (s, g) in enumerate(zip(src, group)) if g in SUP_CAT}
+    cat_val = {i: s[len(g) + 1:] for i, (s, g) in enumerate(zip(src, group, strict=True)) if g in SUP_CAT}
     reasons: list[list[str]] = []
     cols = pd.Series(group)
     for r in range(len(f)):
@@ -274,7 +274,7 @@ def assess(ds: MerchantDataset, model: dict[str, Any] | None = None) -> None:
     res["an_level"] = res["an_pct"].map(lambda p: None if pd.isna(p) else level_of(p))
     order = {None: 0, "low": 1, "medium": 2, "high": 3}
     inv = {v: k for k, v in order.items() if k}
-    res["level"] = [inv.get(max(order[a], order[b]), None) for a, b in zip(res["sup_level"], res["an_level"])]
+    res["level"] = [inv.get(max(order[a], order[b]), None) for a, b in zip(res["sup_level"], res["an_level"], strict=True)]
     res["score"] = res[["sup_pct", "an_pct"]].max(axis=1)
     res["alert"] = res["level"].isin(["medium", "high"])
     res["signal"] = np.where(res["sup_level"].isin(["medium", "high"]), np.where(res["an_level"].isin(["medium", "high"]), "both", "risk_model"), np.where(res["an_level"].isin(["medium", "high"]), "unusual_activity", "none"))

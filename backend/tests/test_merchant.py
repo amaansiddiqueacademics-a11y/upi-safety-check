@@ -223,7 +223,6 @@ def trained():
     base = _builtin_base(1800)
     y = base.pop("_fraud").to_numpy()
     tx = finalize_transactions(base.drop(columns=["order_id"]))
-    order = tx["ts"].argsort(kind="stable")
     cut = int(len(tx) * 0.75)
     m = risk.train_supervised(tx.iloc[:cut], y[:cut], C=0.5)  # time-ordered split: no shuffling
     m["meta"] = {"model": "test model", "trained_on": "generated data", "split": "time", "metrics": {}, "caveat": "test"}

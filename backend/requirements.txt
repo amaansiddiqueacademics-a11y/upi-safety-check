@@ -9,8 +9,5 @@ scikit-learn==1.9.1
 joblib==1.6.0
 xgboost==3.4.1
 lightgbm==4.7.0
-# PyTorch is NOT needed to run the app: the neural network is shipped as plain NumPy arrays.
-# It is only needed to retrain (ml/train_fraud.py):  pip install torch
-# tests
-pytest==9.1.1
-httpx==0.28.1
+# Everything the app needs to run (this is what the Docker image installs).
+# Tests and linting: requirements-dev.txt. Retraining the models: requirements-train.txt.

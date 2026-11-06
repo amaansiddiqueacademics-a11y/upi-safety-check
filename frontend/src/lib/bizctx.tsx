@@ -7,10 +7,10 @@ interface Ctx {
   meta: BizMeta | null
   name: string
   setName: (n: string) => void
-  useDataset: (m: BizMeta) => void
-  useSample: () => void
+  openDataset: (m: BizMeta) => void
+  openSample: () => void
 }
-const C = createContext<Ctx>({ ds: 'sample', meta: null, name: 'Demo Mart', setName: () => undefined, useDataset: () => undefined, useSample: () => undefined })
+const C = createContext<Ctx>({ ds: 'sample', meta: null, name: 'Demo Mart', setName: () => undefined, openDataset: () => undefined, openSample: () => undefined })
 
 const read = (k: string): string | null => {
   try {
@@ -58,18 +58,18 @@ export function BizProvider({ children }: { children: ReactNode }) {
     },
     [ds],
   )
-  const useDataset = useCallback((m: BizMeta) => {
+  const openDataset = useCallback((m: BizMeta) => {
     write('biz-ds', m.id)
     setMeta(m)
     setDs(m.id)
     setNameState(read(`biz-name-v2:${m.id}`) ?? defaultName(m.id))
   }, [])
-  const useSample = useCallback(() => {
+  const openSample = useCallback(() => {
     write('biz-ds', 'sample')
     setDs('sample')
     setNameState(read('biz-name-v2:sample') ?? defaultName('sample'))
   }, [])
-  const value = useMemo(() => ({ ds, meta, name, setName, useDataset, useSample }), [ds, meta, name, setName, useDataset, useSample])
+  const value = useMemo(() => ({ ds, meta, name, setName, openDataset, openSample }), [ds, meta, name, setName, openDataset, openSample])
   return <C.Provider value={value}>{children}</C.Provider>
 }
 export const useBizCtx = () => useContext(C)

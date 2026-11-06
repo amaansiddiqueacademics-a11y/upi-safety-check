@@ -19,6 +19,7 @@ const read = (ds: string): AddedPayment[] => {
 
 export function useAddedPayments(ds: string) {
   const [items, setItems] = useState<AddedPayment[]>(() => read(ds))
+  // oxlint-disable-next-line react/set-state-in-effect -- syncing from localStorage, an outside store
   useEffect(() => setItems(read(ds)), [ds])
   const save = useCallback((next: AddedPayment[]) => {
     const n = next.slice(0, MAX)

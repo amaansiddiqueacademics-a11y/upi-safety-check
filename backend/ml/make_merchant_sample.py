@@ -64,7 +64,7 @@ def main() -> None:
     out = pd.DataFrame({
         "txn_ref": (600_000_000_000 + d["TransactionID"].astype("int64")).astype(str), "timestamp": START + pd.to_timedelta(d["TransactionDT"], unit="s"),
         "amount": (d["TransactionAmt"].to_numpy(float) * INR_PER_USD).round(2), "status": status,
-        "outlet": ["Outlet %02d" % (1 + r % N_BRANCHES) for r in region],
+        "outlet": [f"Outlet {1 + r % N_BRANCHES:02d}" for r in region],
         "payer_ref": ("C" + d["card1"].astype(int).astype(str)).to_numpy(), "is_fraud": y, "fraud_prob": prob.round(5), "zone": zone, "reasons": reasons,
     })
     OUT.parent.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,11 @@
+# Lint rules that catch real problems: syntax errors, unused or undefined names, likely bugs,
+# import order and outdated syntax. Line length is not enforced.
+target-version = "py312"
+line-length = 200
+
+[lint]
+select = ["E9", "F", "B", "I", "UP"]
+ignore = ["B008"]  # FastAPI's Query(...) / File(...) defaults are the intended pattern
+
+[lint.per-file-ignores]
+"ml/*" = ["E402"]  # scripts put the backend folder on sys.path before importing app.*

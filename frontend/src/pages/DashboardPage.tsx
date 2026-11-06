@@ -21,7 +21,6 @@ const STATUS = {
 } as const
 const ZONE = { safe: { label: 'Safe', color: '#0E8A7E' }, check: { label: 'Check', color: '#B7700B' }, fraud: { label: 'Fraud', color: '#C2304A' } } as const
 const BRAND = '#1F4FD8'
-const GREY = '#94A3B8'
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 /** "Outlet 12" is shown as "Branch 12". */
@@ -87,7 +86,10 @@ export default function DashboardPage() {
   // Payments page link carrying the current slicers (the Payments page reads these when it is rebuilt).
   const toPayments = (tab: string) => {
     const q = new URLSearchParams({ tab })
-    if (r) (q.set('date_from', r.from), q.set('date_to', r.to))
+    if (r) {
+      q.set('date_from', r.from)
+      q.set('date_to', r.to)
+    }
     if (f.branch) q.set('branch', f.branch)
     return `/transactions?${q}`
   }

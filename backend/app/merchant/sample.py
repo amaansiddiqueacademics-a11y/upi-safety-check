@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .model import MerchantDataset, empty_orders, empty_refunds, empty_settlements, finalize_transactions
+from .model import MerchantDataset, finalize_transactions
 
 BACKEND = Path(__file__).resolve().parents[2]
 MERCHANT_SAMPLE = BACKEND / "data" / "merchant_sample"

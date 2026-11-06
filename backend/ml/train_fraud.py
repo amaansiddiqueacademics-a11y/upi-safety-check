@@ -187,8 +187,8 @@ def curves(y: np.ndarray, p: np.ndarray) -> dict[str, Any]:
     order = np.argsort(rec, kind="stable")
     prec_i = np.maximum.accumulate(prec)  # recall falls along the array: best precision at recall >= r
     rg = np.linspace(0, 1, 101)
-    return {"roc": [[round(float(a), 4), round(float(b), 4)] for a, b in zip(grid, np.interp(grid, fpr, tpr))],
-            "pr": [[round(float(a), 4), round(float(b), 4)] for a, b in zip(rg, np.interp(rg, rec[order], prec_i[order]))]}
+    return {"roc": [[round(float(a), 4), round(float(b), 4)] for a, b in zip(grid, np.interp(grid, fpr, tpr), strict=True)],
+            "pr": [[round(float(a), 4), round(float(b), 4)] for a, b in zip(rg, np.interp(rg, rec[order], prec_i[order]), strict=True)]}
 
 
 def calibration(y: np.ndarray, p: np.ndarray, bins: int = 10) -> list[dict[str, float]]:

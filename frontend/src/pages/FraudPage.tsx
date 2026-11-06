@@ -9,7 +9,6 @@ import { DEFAULT_PAYMENT, INR_PER_USD, fraudApi, inr, type Experiment, type Mode
 
 // One colour per model, the same on every chart (colour-blind safe).
 const MC: Record<string, string> = { xgb: '#1F4FD8', mlp: '#7C5CDB', rf: '#0E8A7E', logreg: '#94A3B8' }
-const ORDER = ['xgb', 'mlp', 'rf', 'logreg']
 const NAMES: Record<string, string> = { xgb: 'XGBoost', mlp: 'Neural network', rf: 'Random forest', logreg: 'Logistic regression' }
 const CH = 300
 const AX = { tick: { fontSize: 12, fill: 'var(--muted)' }, stroke: 'var(--line)', tickLine: false } as const
@@ -222,7 +221,9 @@ function CheckFlow() {
       .catch((x) => setMsg(x.message))
       .finally(() => setBusy(false))
   }
-  useEffect(() => { if (params.get('auto') === '1') run() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  // A link from another page (…?auto=1) runs the check once, on arrival only.
+  // oxlint-disable-next-line react/exhaustive-deps, react/set-state-in-effect -- intentional, see above
+  useEffect(() => { if (params.get('auto') === '1') run() }, [])
   const stale = out != null && checked !== JSON.stringify(a)
   const I = 'w-full rounded-xl border border-line bg-surface px-3 py-2 min-h-11'
 
@@ -401,9 +402,9 @@ function mergeCurves(e: Experiment, key: 'roc' | 'pr', ids: string[], maxX = 1) 
 const TABLE_ORDER = ['logreg', 'rf', 'mlp', 'xgb']
 
 function ModelSection({ e }: { e: Experiment }) {
-  const ids = TABLE_ORDER.filter((m) => e.models[m])
-  const roc = useMemo(() => Object.fromEntries(ids.map((m) => [m, mergeCurves(e, 'roc', [m], 0.1)])), [e])
-  const pr = useMemo(() => Object.fromEntries(ids.map((m) => [m, mergeCurves(e, 'pr', [m])])), [e])
+  const ids = useMemo(() => TABLE_ORDER.filter((m) => e.models[m]), [e])
+  const roc = useMemo(() => Object.fromEntries(ids.map((m) => [m, mergeCurves(e, 'roc', [m], 0.1)])), [e, ids])
+  const pr = useMemo(() => Object.fromEntries(ids.map((m) => [m, mergeCurves(e, 'pr', [m])])), [e, ids])
 
   return (
     <Section n={2} id="sec-models" title="Model comparison"
