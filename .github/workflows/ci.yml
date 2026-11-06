@@ -1,0 +1,58 @@
+# Runs on every push and pull request: backend lint + tests, frontend lint + tests + build.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: backend/.python-version
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - run: pip install -r requirements-dev.txt
+      - name: Lint
+        run: ruff check app ml tests
+      # before the tests, which would quietly rebuild a stale cache
+      - name: The committed sample cache matches the code
+        run: python -c "from app.merchant import store; import sys; sys.exit(0 if store._cached_sample() is not None else 'stale _analyzed.pkl: run the app once and commit backend/data/merchant_sample/_analyzed.pkl')"
+      - name: Tests
+        run: python -m pytest -q
+        env:
+          MERCHANT_WARM: "0"
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Tests
+        run: npm test
+      - name: Type-check and build
+        run: npm run build

@@ -29,7 +29,7 @@ npm run dev                                              # http://localhost:5173
 ```
 Open http://localhost:5173. The sample business comes pre-analysed in `backend/data/merchant_sample/_analyzed.pkl`, so the server starts in seconds. If you change the sample or the analysis code, the cache is rebuilt automatically on the next start (about half a minute).
 
-Checks: `cd backend && python -m pytest -q` (38 tests) · `cd frontend && npm test && npm run build` (17 tests; the build type-checks first)
+Checks (also run by GitHub Actions on every push): `cd backend && pip install -r requirements-dev.txt && ruff check app ml tests && python -m pytest -q` (38 tests) · `cd frontend && npm run lint` · `npm test && npm run build` (17 tests; the build type-checks first)
 
 ## The pages
 
@@ -110,7 +110,7 @@ Only needed to rebuild from scratch. `ml/make_synthetic_ieee.py` copies value po
 ```
 cd backend
 python ml/make_synthetic_ieee.py      # synthetic payments -> data/
-pip install torch                     # only for retraining
+pip install -r requirements-train.txt # adds PyTorch, only for retraining
 python ml/train_fraud.py              # the 4 models + evaluation (about 10 minutes)
 python ml/export_numpy_mlp.py         # store the neural network as NumPy arrays, so the app runs without PyTorch
 python ml/make_merchant_sample.py     # the Dashboard sample -> data/merchant_sample/
