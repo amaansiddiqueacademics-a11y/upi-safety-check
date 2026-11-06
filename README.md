@@ -1,10 +1,18 @@
 # UPI Safety Check
 
+[![CI](https://github.com/amaansiddiqueacademics-a11y/upi-safety-check/actions/workflows/ci.yml/badge.svg)](https://github.com/amaansiddiqueacademics-a11y/upi-safety-check/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A fraud and payment-safety dashboard for small UPI merchants. It answers three questions in plain words: **did the money arrive, where did money go missing, and which payments look like fraud.**
 
 Backend: FastAPI + scikit-learn / XGBoost / LightGBM (`backend/`). Frontend: React + Vite + Tailwind + Recharts PWA (`frontend/`). No login, English only.
 
 > **All data and every score here is synthetic.** The four fraud models were trained and tested on synthetic payments in the IEEE-CIS layout, and the Dashboard sample is made from their unseen test period. Nothing says anything about real UPI fraud rates.
+
+| Fraud check | Dashboard |
+|---|---|
+| ![Fraud check: a payment matching known fraud patterns, with the reasons and what to do](docs/screenshots/fraud-check.png) | ![Dashboard: sales, money received, missing money and risky payments for the sample shop](docs/screenshots/dashboard.png) |
+| **Missing money** | **Scam messages (phone)** |
+| ![Missing money: orders, refunds and settlements that do not add up](docs/screenshots/missing-money.png) | <img src="docs/screenshots/scam-message-phone.png" alt="Scam messages on a phone: a pasted SMS judged a scam, with reasons" width="260"> |
 
 ## Run it
 
@@ -98,7 +106,7 @@ All optional. The backend reads environment variables; the frontend reads `front
 
 The frontend is static and goes on **Vercel**. The backend (FastAPI + the trained models) does not fit Vercel functions, so it runs as a Docker service on **Render** (the free plan is enough). The two are joined by one environment variable.
 
-1. **Backend on Render.** New > Blueprint > pick this repository and branch; Render reads `render.yaml` and builds `backend/Dockerfile`. The plan is `free`: tested with the free plan's limits (512 MB, 0.1 CPU), the backend starts in about a minute and uses about 210 MB at start and 270 MB once every page has been used, because the neural network ships as plain NumPy arrays and needs no PyTorch. Each uploaded dataset held in memory adds about 30 MB, so `render.yaml` caps uploads at 4 (`MAX_UPLOADS`). Free services sleep after 15 minutes without visits, so the first visit after a pause takes about a minute to wake. When it is live, note its address, for example `https://upi-safety-check-api.onrender.com`. Check `https://<that address>/api/health`. The sample ships with a prepared cache, so the Dashboard opens in a few seconds once the service is awake.
+1. **Backend on Render.** New > Blueprint > pick this repository and branch; Render reads `render.yaml` and builds `backend/Dockerfile`. The plan is `free`. Tested in Docker with the free plan's limits (512 MB, 0.1 CPU): the backend is healthy about 20 seconds after starting, uses about 150 MB idle and 240 MB once every page has been used, and stays at about 310 MB with four full-size uploads held (later uploads replace the oldest; `render.yaml` sets `MAX_UPLOADS=4`). It fits because the neural network ships as plain NumPy arrays and needs no PyTorch. At 0.1 CPU an upload of about 20,000 payments takes a minute or two to analyse. Free services sleep after 15 minutes without visits, so the first visit after a pause takes about a minute to wake. When it is live, note its address, for example `https://upi-safety-check-api.onrender.com`. Check `https://<that address>/api/health`. The sample ships with a prepared cache, so the Dashboard opens in a few seconds once the service is awake.
 2. **Frontend on Vercel.** Add New > Project > import this repository, branch `main`, and set **Root Directory** to `frontend`. Framework preset: Vite (`frontend/vercel.json` sets the build and the single-page fallback). Under Environment Variables add `VITE_API_BASE` = `https://<the Render address>/api`, then Deploy.
 3. **CORS.** The API already accepts any `https://*.vercel.app` address (`CORS_ORIGIN_REGEX` in `render.yaml`). For a custom domain, add it to `CORS_ORIGINS` on Render (comma-separated).
 

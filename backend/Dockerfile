@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm 
 
 WORKDIR /app/backend
 COPY backend/requirements.txt .
-# No PyTorch: the neural network ships as NumPy arrays, which keeps the image small and the memory under 512 MB
+# Runtime packages only (tests: requirements-dev.txt). No PyTorch: the neural network ships as NumPy arrays, which keeps the image small and the memory under 512 MB
 RUN pip install --default-timeout=300 --retries 10 -r requirements.txt
 
 # Only what the running app needs: code, trained models, the sample (and its prepared cache), the message data and the evaluation results
