@@ -59,7 +59,7 @@
 - The old Overview page was deleted.
 
 ## 2026-10-21: Dashboard data switched to the synthetic IEEE-layout data (user decision)
-- The old `upi_fraud_gh` sample and the old `txn_risk` model no longer feed the Dashboard. `ml/make_merchant_sample.py` takes the TEST period (days 150-182, never seen by the four fraud models) of `data/raw/ieee_synth`, keeps 1 payment in 10 (seeded), converts to rupees at the fixed 88 per dollar, scores every payment with the shipped XGBoost model and the Fraud check cut-offs, and writes `data/merchant_sample/transactions.csv`.
+- The old `upi_fraud_gh` sample and the old `txn_risk` model no longer feed the Dashboard. `ml/make_merchant_sample.py` takes the TEST period (days 150-182, never seen by the four fraud models) of the synthetic data in `data/`, keeps 1 payment in 10 (seeded), converts to rupees at the fixed 88 per dollar, scores every payment with the shipped XGBoost model and the Fraud check cut-offs, and writes `data/merchant_sample/transactions.csv`.
 - Branches are 12 groups made from the billing region. Status is simulated: most succeed, a few fail or stay pending, ~70% of fraud ends as a reversal. Orders, refunds and settlements are still generated from the payments with planted problems.
 - Risk zones come from the stored model scores (`risk.assess_scored`); reasons are the plain-word warning signs (new phone, burst, amount spike...). Uploads still use the old path.
 - "vs last period" is hidden when the data starts inside the previous period.
