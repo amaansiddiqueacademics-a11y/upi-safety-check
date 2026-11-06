@@ -31,7 +31,14 @@ jobs:
         run: ruff check app ml tests
       # before the tests, which would quietly rebuild a stale cache
       - name: The committed sample cache matches the code
-        run: python -c "from app.merchant import store; import sys; sys.exit(0 if store._cached_sample() is not None else 'stale _analyzed.pkl: run the app once and commit backend/data/merchant_sample/_analyzed.pkl')"
+        run: |
+          python - <<'PY'
+          import sys
+          from app.merchant import store
+          if store._cached_sample() is None:
+              sys.exit("Stale backend/data/merchant_sample/_analyzed.pkl: start the app once and commit the rebuilt file.")
+          print("sample cache matches the code")
+          PY
       - name: Tests
         run: python -m pytest -q
         env:
