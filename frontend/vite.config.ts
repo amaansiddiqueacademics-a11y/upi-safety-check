@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config'
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -32,5 +32,4 @@ export default defineConfig({
     }),
   ],
   server: { port: 5173, proxy: { '/api': process.env.API_TARGET ?? 'http://127.0.0.1:8010' } },
-  test: { environment: 'node', include: ['src/**/*.test.ts'] },
 })

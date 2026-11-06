@@ -223,12 +223,3 @@ export const DEFAULT_PAYMENT: Payment = {
 export const INR_PER_USD = 88
 /** Full rupee amount with Indian digit grouping, from a dollar value: 1234 -> "₹1,08,592". */
 export const inr = (usd: number) => `₹${Math.round(usd * INR_PER_USD).toLocaleString('en-IN')}`
-/** Short rupee amount for chart axes and labels, from a dollar value: crore (Cr), lakh (L) or thousand (k). */
-export function inrShort(usd: number): string {
-  const r = usd * INR_PER_USD
-  const a = Math.abs(r)
-  const fmt = (v: number) => (v >= 10 ? Math.round(v).toString() : v.toFixed(1).replace(/\.0$/, ''))
-  return a >= 1e7 ? `₹${fmt(r / 1e7)} Cr` : a >= 1e5 ? `₹${fmt(r / 1e5)} L` : a >= 1e3 ? `₹${fmt(r / 1e3)}k` : `₹${Math.round(r)}`
-}
-/** Re-label a dollar amount band such as "25-50", "<25" or "1k+" in rupees. */
-export const bandInr = (band: string) => band.replace(/(\d+(?:\.\d+)?)(k?)/g, (_, n: string, k: string) => inrShort(Number(n) * (k ? 1000 : 1)).replace('₹', '')).replace(/^/, '₹').replace('₹<', '<₹')

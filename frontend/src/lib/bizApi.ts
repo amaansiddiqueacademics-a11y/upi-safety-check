@@ -1,5 +1,5 @@
-// Richer /api/merchant endpoints: transactions, sales leakage, risk alerts, table previews and CSV uploads.
-import type { ActionItem, BizMeta, Reconciliation } from './biz'
+// /api/merchant endpoints for the Business pages: dashboard, payments, missing money, risk alerts, data explorer, uploads, scam messages.
+import type { BizMeta, Reconciliation } from './biz'
 
 const BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? '/api'
 
@@ -48,28 +48,6 @@ export interface ReconPage extends Reconciliation {
   page_size: number
   items: Discrepancy[]
 }
-export interface RiskItem {
-  tid: string
-  ts: string
-  amount_paise: number
-  status: string
-  outlet: string
-  level: 'high' | 'medium'
-  score: number
-  signal: 'risk_model' | 'unusual_activity' | 'both'
-  risk_model_reasons: string[]
-  unusual_reasons: string[]
-}
-export interface RiskInfo {
-  supervised: { available: boolean; reason?: string; model?: string; trained_on?: string; split?: string; caveat?: string; metrics?: { pr_auc: number; base_rate_test: number; lift_vs_chance: number; at_policy: { precision: number; recall: number } } }
-  anomaly: { available: boolean; reason?: string; method?: string }
-}
-export interface RiskPage {
-  total: number
-  items: RiskItem[]
-  explainer: string
-  info: RiskInfo
-}
 export interface FraudInputs {
   amount: number
   time: 'morning' | 'afternoon' | 'evening' | 'night'
@@ -90,12 +68,6 @@ export interface TxnDetail extends TxnRow {
   discrepancy_items: Discrepancy[]
   risk: { level: string | null; score: number | null; risk_model: { percentile: number; modelled_chance: number; reasons: string[] } | null; unusual_activity: { percentile: number; reasons: string[] } | null } | null
   recommended_steps: string[]
-}
-export interface TablePage {
-  name: string
-  total: number
-  columns: string[]
-  rows: Record<string, string | number | null>[]
 }
 
 async function get<T>(path: string): Promise<T> {
@@ -195,9 +167,6 @@ export const bizApi = {
   transactions: (ds: string, p: Record<string, string | number | boolean | undefined>) => get<TxnPage>(`/merchant/${ds}/transactions?${qs(p)}`),
   transaction: (ds: string, tid: string) => get<TxnDetail>(`/merchant/${ds}/transactions/${encodeURIComponent(tid)}`),
   recon: (ds: string, p: Record<string, string | number | undefined>) => get<ReconPage>(`/merchant/${ds}/reconciliation?${qs(p)}`),
-  risk: (ds: string, p: Record<string, string | number | undefined>) => get<RiskPage>(`/merchant/${ds}/risk?${qs(p)}`),
-  actions: (ds: string) => get<{ total: number; items: ActionItem[] }>(`/merchant/${ds}/actions?limit=200`),
-  table: (ds: string, name: string, page = 1) => get<TablePage>(`/merchant/${ds}/table/${name}?page=${page}&page_size=10`),
   async upload(files: { transactions: File; orders?: File | null; refunds?: File | null; settlements?: File | null }): Promise<BizMeta> {
     const fd = new FormData()
     fd.append('transactions', files.transactions)
@@ -215,62 +184,6 @@ export const bizApi = {
     return res.json() as Promise<BizMeta>
   },
 }
-export interface ModelResult {
-  id: string
-  name: string
-  kind: 'learned' | 'reference'
-  about: string
-  best: boolean
-  roc_auc: number
-  pr_auc: number
-  precision: number
-  recall: number
-  f1: number
-  false_alarm_rate: number
-  flagged: number
-  params: [string, string, string][]
-  confusion: { tp: number; fp: number; fn: number; tn: number }
-}
-export interface ModelsSummary {
-  info: { source: string; rows: number; fraud_examples: number; fraud_rate: number; train_rows: number; test_rows: number; test_fraud: number; test_base_rate: number; train_from: string; test_from: string; test_to: string; alert_fraction: number; likely_fraction: number; features: string[]; split: string; synthetic: boolean; caveats: string[] }
-  models: ModelResult[]
-  importance: Record<string, { factor: string; label: string; weight: number; share: number }[]>
-  best: string
-  thresholds: Record<string, { suspicious: number; likely: number }>
-  choices: { payment_type: string[]; payment_app: string[]; device_type: string[]; kyc: string[]; city_tier: string[] }
-}
-export interface Prediction {
-  tid: string | null
-  details: { label: string; value: string }[]
-  label_in_data: number | null
-  model: string
-  model_name: string
-  probability: number
-  verdict: 'likely_fraud' | 'suspicious' | 'not_likely'
-  all_models: { id: string; name: string; probability: number; verdict: 'likely_fraud' | 'suspicious' | 'not_likely' }[]
-  reasons: { factor: string; text: string; effect: number }[]
-  thresholds: { suspicious: number; likely: number }
-  walk: { start: number; end: number; steps: { factor: string; label: string; text: string; delta: number; after: number }[] }
-  agreement: number
-  next_steps: string[]
-  caveat: string
-}
-export interface ManualInput {
-  amount_rupees: number
-  hour: number
-  weekend: boolean
-  new_device: boolean
-  location_mismatch: boolean
-  failed_attempts_24h: number
-  payer_usual_amount_rupees?: number
-  loyalty_score: number
-  recurring: boolean
-  payment_type: string
-  payment_app: string
-  device_type: string
-  kyc: string
-  city_tier: string
-}
 async function send<T>(path: string, method: string, body?: unknown): Promise<T> {
   const res = await fetch(BASE + path, { method, headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined })
   if (!res.ok) {
@@ -285,14 +198,6 @@ async function send<T>(path: string, method: string, body?: unknown): Promise<T>
   }
   return res.json() as Promise<T>
 }
-export const modelApi = {
-  summary: (ds: string) => get<ModelsSummary>(`/merchant/${ds}/models`),
-  train: (ds: string) => send<ModelsSummary>(`/merchant/${ds}/models/train`, 'POST'),
-  predictExisting: (ds: string, tid: string, model?: string) => get<Prediction>(`/merchant/${ds}/models/predict/${encodeURIComponent(tid)}${model ? `?model=${model}` : ''}`),
-  predictManual: (ds: string, body: ManualInput, model?: string) => send<Prediction>(`/merchant/${ds}/models/predict${model ? `?model=${model}` : ''}`, 'POST', body),
-}
-export const exportUrl =(t: string) => `${BASE}/merchant/sample/export/${t}.csv`
-export const titleCase = (s: string) => s.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase())
 export const dtFmt = (iso: string) => new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
 
 export interface SpamResult {
@@ -314,40 +219,4 @@ export interface SpamSummary {
 export const spamApi = {
   summary: () => get<SpamSummary>('/merchant/spam/models'),
   predict: (text: string, model?: string) => send<SpamResult>(`/merchant/spam/predict${model ? `?model=${model}` : ''}`, 'POST', { text }),
-}
-
-export interface FraudInput {
-  Transaction_Amount: number
-  Transaction_Type: string
-  Authentication_Method: string
-  Device_Type: string
-  Location: string
-  Merchant_Category: string
-  Card_Type: string
-  IP_Address_Flag: number
-  Previous_Fraudulent_Activity: number
-  Failed_Transaction_Count_7d: number
-  Transaction_Distance?: number
-  Daily_Transaction_Count?: number
-  Avg_Transaction_Amount_7d?: number
-  Account_Balance?: number
-  Card_Age?: number
-  Is_Weekend?: number
-  Hour?: number
-}
-export interface FraudResult {
-  model_name: string
-  probability: number
-  verdict: 'likely_fraud' | 'suspicious' | 'not_likely'
-  all_models: { id: string; name: string; probability: number; verdict: 'likely_fraud' | 'suspicious' | 'not_likely' }[]
-  agreement: number
-  reasons: { factor: string; label: string; text: string; effect: number }[]
-  thresholds: { suspicious: number; likely: number }
-  next_steps: string[]
-  caveat: string
-}
-export const fraudApi = {
-  summary: () => get<ModelsSummary>('/merchant/fraud/models'),
-  train: () => send<ModelsSummary>('/merchant/fraud/train', 'POST'),
-  predict: (body: FraudInput) => send<FraudResult>('/merchant/fraud/predict', 'POST', body),
 }

@@ -1,20 +1,22 @@
-import { useEffect, useState, type ComponentType } from 'react'
+import { lazy, Suspense, useEffect, useState, type ComponentType } from 'react'
 import { Link, Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { Gauge, BellRing, BookOpenCheck, CircleHelp, Database, Ellipsis, GitCompareArrows, LayoutDashboard, ListChecks, MessageSquareWarning, ReceiptText, ScanLine, X } from 'lucide-react'
 import { useBusy } from './lib/biz'
-import CheckPage from './pages/CheckPage'
-import LedgerPage from './pages/LedgerPage'
-import MessagesPage from './pages/MessagesPage'
-import AboutPage from './pages/AboutPage'
-import DashboardPage from './pages/DashboardPage'
-import FraudPage from './pages/FraudPage'
-import PaymentsPage from './pages/PaymentsPage'
-import MissingMoneyPage from './pages/MissingMoneyPage'
-import RiskPage from './pages/RiskPage'
-import ActionsPage from './pages/ActionsPage'
-import DataPage from './pages/DataPage'
 import { LogoMark } from './components/Illustration'
 import { useBizCtx } from './lib/bizctx'
+
+// Each page is its own download, so the first visit only loads the page it opens.
+const CheckPage = lazy(() => import('./pages/CheckPage'))
+const LedgerPage = lazy(() => import('./pages/LedgerPage'))
+const MessagesPage = lazy(() => import('./pages/MessagesPage'))
+const AboutPage = lazy(() => import('./pages/AboutPage'))
+const DashboardPage = lazy(() => import('./pages/DashboardPage'))
+const FraudPage = lazy(() => import('./pages/FraudPage'))
+const PaymentsPage = lazy(() => import('./pages/PaymentsPage'))
+const MissingMoneyPage = lazy(() => import('./pages/MissingMoneyPage'))
+const RiskPage = lazy(() => import('./pages/RiskPage'))
+const ActionsPage = lazy(() => import('./pages/ActionsPage'))
+const DataPage = lazy(() => import('./pages/DataPage'))
 
 type Icon = ComponentType<{ size?: number; className?: string }>
 interface Item {
@@ -140,32 +142,22 @@ function Shell() {
         </header>
 
         <main id="main" className="flex-1 w-full max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-32 lg:pb-10">
-          <Routes>
-            <Route path="/" element={<FraudPage />} />
-            <Route path="/fraud" element={<Navigate to="/" replace />} />
-            <Route path="/login" element={<Navigate to="/" replace />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/check" element={<CheckPage />} />
-            <Route path="/ledger" element={<LedgerPage />} />
-            <Route path="/transactions" element={<PaymentsPage />} />
-            <Route path="/reconciliation" element={<MissingMoneyPage />} />
-            <Route path="/risk" element={<RiskPage />} />
-            <Route path="/why" element={<Navigate to="/risk" replace />} />
-            <Route path="/actions" element={<ActionsPage />} />
-            <Route path="/models" element={<Navigate to="/messages" replace />} />
-            <Route path="/data" element={<DataPage />} />
-            <Route path="/safety" element={<Navigate to="/" replace />} />
-            <Route path="/messages" element={<MessagesPage />} />
-            <Route path="/message" element={<Navigate to="/messages" replace />} />
-            <Route path="/number" element={<Navigate to="/" replace />} />
-            <Route path="/handle" element={<Navigate to="/" replace />} />
-            <Route path="/report" element={<Navigate to="/" replace />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/business" element={<Navigate to="/" replace />} />
-            <Route path="/verify" element={<Navigate to="/check" replace />} />
-            <Route path="/statement" element={<Navigate to="/ledger" replace />} />
-            <Route path="*" element={<DashboardPage />} />
-          </Routes>
+          <Suspense fallback={<div className="py-24 text-center text-muted" role="status">Loading…</div>}>
+            <Routes>
+              <Route path="/" element={<FraudPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/check" element={<CheckPage />} />
+              <Route path="/ledger" element={<LedgerPage />} />
+              <Route path="/transactions" element={<PaymentsPage />} />
+              <Route path="/reconciliation" element={<MissingMoneyPage />} />
+              <Route path="/risk" element={<RiskPage />} />
+              <Route path="/actions" element={<ActionsPage />} />
+              <Route path="/data" element={<DataPage />} />
+              <Route path="/messages" element={<MessagesPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
         </main>
       </div>
 

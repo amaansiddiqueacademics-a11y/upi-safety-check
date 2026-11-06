@@ -1,4 +1,4 @@
-// Client for /api/merchant/*: read-only analytics over the sample business (or, later, an uploaded dataset).
+// Shared helpers for the Business pages: dataset info, a small data-loading hook, the loading bar and rupee formatting.
 import { useEffect, useState, useSyncExternalStore } from 'react'
 
 // How many requests are in flight right now: drives the thin loading bar across the top of the page.
@@ -12,50 +12,6 @@ export const useBusy = () => useSyncExternalStore((cb) => (listeners.add(cb), ()
 
 const BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? '/api'
 
-export interface Kpi {
-  key: string
-  label: string
-  unit: 'money' | 'count' | 'bps'
-  value: number | null // money in paise, bps = hundredths of a percent
-  previous: number | null
-  change_pct: number | null
-  tone: string
-  definition: string
-  sub: string | null
-}
-export interface Overview {
-  period: string
-  from: string
-  to: string
-  data_end: string
-  kpis: Kpi[]
-  status_breakdown: { status: string; count: number; amount_paise: number }[]
-  top_outlets: { outlet: string; confirmed_paise: number; payments: number; attempts: number; discrepancies: number }[]
-  outlet_count: number
-  unusual_days: { date: string; value_paise: number; typical_paise: number; direction: string; metric: string }[]
-}
-export interface SeriesPoint {
-  date: string
-  recorded_sales: number
-  confirmed: number
-  refunds: number
-  attempts: number
-  failed: number
-  discrepancies: number
-  alerts: number
-}
-export interface ActionItem {
-  id: string
-  kind: string
-  classification: 'rule_based_discrepancy' | 'ml_risk_alert' | 'unusual_activity' | 'observation'
-  title: string
-  severity: 'high' | 'medium' | 'low'
-  ts: string
-  summary: string
-  amount_at_stake_paise: number
-  next_step: string
-  priority: number
-}
 export interface BizMeta {
   id: string
   label: string
@@ -78,10 +34,6 @@ export interface Reconciliation {
 
 export const biz = {
   meta: (ds = 'sample') => get<BizMeta>(ds === 'sample' ? `/merchant/datasets/sample` : `/merchant/${ds}/meta`),
-  overview: (ds: string, period: string) => get<Overview>(`/merchant/${ds}/overview?period=${period}`),
-  series: (ds: string, granularity: string, days?: number) => get<{ points: SeriesPoint[] }>(`/merchant/${ds}/series?granularity=${granularity}${days ? `&days=${days}` : ''}`),
-  actions: (ds: string, limit = 6) => get<{ total: number; items: ActionItem[] }>(`/merchant/${ds}/actions?limit=${limit}`),
-  reconciliation: (ds: string) => get<Reconciliation>(`/merchant/${ds}/reconciliation?page_size=1`),
 }
 
 async function get<T>(path: string): Promise<T> {
@@ -133,4 +85,3 @@ export function rupeesCompact(paise: number): string {
   if (r >= 1e3) return `₹${(r / 1e3).toFixed(1)}k`
   return `₹${Math.round(r)}`
 }
-export const pct = (bps: number) => `${(bps / 100).toFixed(1)}%`
