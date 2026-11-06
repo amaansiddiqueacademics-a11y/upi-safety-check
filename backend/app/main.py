@@ -59,6 +59,9 @@ async def rate_limit(request: Request, call_next):
     limit = LIMITS.get(path, 240)
     key = (request.client.host if request.client else "?", path)
     now = time.monotonic()
+    if len(_hits) > 5000:  # forget visitors idle for over a minute, so the table cannot grow without limit
+        for k in [k for k, v in _hits.items() if not v or now - v[-1] > 60]:
+            del _hits[k]
     q = _hits[key]
     while q and now - q[0] > 60:
         q.popleft()
@@ -70,4 +73,4 @@ async def rate_limit(request: Request, call_next):
 
 @app.get("/api/health")
 def health() -> dict[str, Any]:
-    return {"status": "ok", "database": "ok"}
+    return {"status": "ok"}  # no database: datasets live in memory

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import io
+import os
 import pickle
 import secrets
 import threading
@@ -27,7 +28,7 @@ from .reconcile import reconcile
 from .sample import build_sample
 
 TTL_SECONDS = 2 * 3600
-MAX_UPLOADS = 10
+MAX_UPLOADS = int(os.environ.get("MAX_UPLOADS", "10"))  # each held upload costs roughly 30 MB of memory
 MAX_BYTES = 8 * 1024 * 1024
 
 _lock = threading.Lock()

@@ -96,6 +96,16 @@ def _band(p: float, presets: dict[str, float]) -> str:
     return "high" if p >= block else "medium" if p >= check else "low"
 
 
+def _share(p: float) -> str:
+    """A calibrated probability in words. Never claims certainty: models are not 0% or 100% sure."""
+    pct = p * 100
+    if pct < 1:
+        return "under 1%"
+    if pct > 99:
+        return "over 99%"
+    return f"about {round(pct)}%" if pct >= 10 else f"about {round(pct, 1)}%"
+
+
 def _advice(band: str) -> str:
     return {"high": "Stop: do not hand over goods or service. Wait until the money shows in your bank account, or ask for another way to pay.",
             "medium": "Looks a little unusual. Check that the payment has really reached your account before you finish the sale.",
@@ -147,9 +157,9 @@ def score(p: PaymentIn) -> dict[str, Any]:
     base = res["ieee"]["base_rate_test"]
     return {
         "probability": prob, "percent": round(prob * 100, 1), "band": band, "flagged": models[best]["flagged"],
-        "headline": {"high": f"Block: very likely fraud. About {round(prob * 100)}% of payments that look like this were fraud.",
-                     "medium": f"Check before you hand over goods: about {round(prob * 100)}% of similar payments were fraud.",
-                     "low": f"Approve: no strong warning signs. about {round(prob * 100, 1)}% of similar payments were fraud (a typical payment: {round(base * 100, 1)}%)."}[band],
+        "headline": {"high": f"Block: very likely fraud. {_share(prob).capitalize()} of payments that look like this were fraud.",
+                     "medium": f"Check before you hand over goods: {_share(prob)} of similar payments were fraud.",
+                     "low": f"Approve: no strong warning signs. {_share(prob).capitalize()} of similar payments were fraud (a typical payment: {round(base * 100, 1)}%)."}[band],
         "advice": _advice(band), "typical_rate_percent": round(base * 100, 2),
         "times_more_than_typical": round(prob / base, 1) if base else None,
         "reasons_up": reasons_up[:4], "reasons_down": reasons_down[:2], "warning_signs": rule_hits,

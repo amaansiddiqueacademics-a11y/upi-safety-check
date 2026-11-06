@@ -35,11 +35,25 @@ SETTLEMENT_TOLERANCE_PAISE = 100  # Rs 1: below this, a difference is rounding, 
 SETTLEMENT_LAG = pd.Timedelta(days=2)  # the most recent days are not expected to be settled yet
 
 
+def _indian(n: int) -> str:
+    """Digits grouped the Indian way: 7334073 -> 73,34,073."""
+    s = str(n)
+    if len(s) <= 3:
+        return s
+    head, tail = s[:-3], s[-3:]
+    groups = []
+    while len(head) > 2:
+        groups.insert(0, head[-2:])
+        head = head[:-2]
+    return ",".join([head, *groups, tail])
+
+
 def inr(paise: int | float) -> str:
+    """Rupees with Indian digit grouping, like the rest of the app: 733407335 paise -> ₹73,34,073.35."""
     p = int(round(paise))
     sign = "-" if p < 0 else ""
     p = abs(p)
-    return f"{sign}₹{p // 100:,}.{p % 100:02d}" if p % 100 else f"{sign}₹{p // 100:,}"
+    return f"{sign}₹{_indian(p // 100)}.{p % 100:02d}" if p % 100 else f"{sign}₹{_indian(p // 100)}"
 
 
 def when(ts: pd.Timestamp) -> str:

@@ -8,8 +8,8 @@ import { useBizCtx } from '../lib/bizctx'
 import { AX, ChartCard, EmptyState, KpiCard, PageHeader, TT, Waterfall, chartHeight } from '../components/shell'
 
 const PRESETS = [
-  { id: '7d', label: '7 days', days: 7, word: 'This week' },
-  { id: '30d', label: '30 days', days: 30, word: 'This month' },
+  { id: '7d', label: '7 days', days: 7, word: 'In the last 7 days' },
+  { id: '30d', label: '30 days', days: 30, word: 'In the last 30 days' },
   { id: '90d', label: '90 days', days: 90, word: 'In the last 3 months' },
   { id: 'all', label: 'All', days: 0, word: 'So far' },
 ] as const

@@ -308,7 +308,8 @@ function CheckFlow() {
 function ChanceRing({ p, color }: { p: number; color: string }) {
   const r = 52
   const c = 2 * Math.PI * r
-  const shown = p < 0.01 ? 'under 1%' : pct(p)
+  // A model is never 0% or 100% sure, so the ends are shown as a range rather than a certainty.
+  const shown = p < 0.01 ? 'under 1%' : p > 0.99 ? 'over 99%' : pct(p)
   return (
     <div className="relative size-44 shrink-0" role="img" aria-label={`Chance of fraud ${shown}`}>
       <svg viewBox="0 0 120 120" className="size-full -rotate-90">
@@ -317,7 +318,7 @@ function ChanceRing({ p, color }: { p: number; color: string }) {
           strokeDasharray={`${Math.max(0.015, p) * c} ${c}`} className="transition-[stroke-dasharray] duration-700 motion-reduce:transition-none" />
       </svg>
       <div className="absolute inset-0 grid place-items-center text-center">
-        <div><div className="text-3xl font-bold num" style={{ color }}>{shown}</div><div className="text-xs text-muted">chance of fraud</div></div>
+        <div><div className={`${shown.length > 5 ? 'text-2xl' : 'text-3xl'} font-bold num`} style={{ color }}>{shown}</div><div className="text-xs text-muted">chance of fraud</div></div>
       </div>
     </div>
   )

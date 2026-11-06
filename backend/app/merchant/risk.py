@@ -27,6 +27,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from .model import MerchantDataset, SIGNAL_CAT
+from .reconcile import inr
 
 MODEL_PATH = Path(__file__).resolve().parents[2] / "models" / "txn_risk.joblib"
 HIGH_PCT, MEDIUM_PCT = 99.0, 95.0  # top 1% = high, top 5% = medium
@@ -90,7 +91,7 @@ _HUMAN = {
     "sig_ip_mismatch": lambda v, _: "the payer's location did not match their usual location" if v >= 0.5 else None,
     "sig_failed_attempts": lambda v, _: f"{int(v)} failed attempt(s) by this payer in the last 24 hours" if v >= 1 else None,
     "amt_ratio": lambda v, _: f"the amount is {v:.1f}x this payer's usual payment" if v >= 1.5 else None,
-    "log_amt": lambda v, _: f"a larger amount (about ₹{np.expm1(v):,.0f}) than most payments" if np.expm1(v) >= 2000 else None,
+    "log_amt": lambda v, _: f"a larger amount (about {inr(round(np.expm1(v)) * 100)}) than most payments" if np.expm1(v) >= 2000 else None,
     "is_night": lambda v, _: "paid late at night (before 6 AM)" if v >= 0.5 else None,
     "hour": lambda v, _: None,
     "is_weekend": lambda v, _: "paid at a weekend" if v >= 0.5 else None,
@@ -183,7 +184,7 @@ _GROUPS = {"amount": ["log_amt", "amt_z"], "time": ["hour_sin", "hour_cos"], "ve
 def _reason(group: str, row: pd.Series) -> str:
     if group == "amount":
         amt = np.expm1(row["log_amt"])
-        return f"the amount (about ₹{amt:,.0f}) is {'higher' if row['amt_z'] > 0 else 'lower'} than is typical for this outlet (about ₹{row['outlet_median_amt']:,.0f})"
+        return f"the amount (about {inr(round(amt) * 100)}) is {'higher' if row['amt_z'] > 0 else 'lower'} than is typical for this outlet (about {inr(round(row['outlet_median_amt']) * 100)})"
     if group == "time":
         return f"it was paid around {int(row['hour']):02d}:00, a time of day that is uncommon in this data"
     if group == "velocity_10m":
